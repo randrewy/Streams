@@ -126,7 +126,7 @@ namespace streams {
 		//OutputType value;
 
 		// TODO: consider using shared_ptr here
-		decltype(mapFunc(*std::declval<decltype(source.get())>())) value;
+        decltype(mapFunc(*std::declval<decltype(source.get())>())) value {};
 
 		auto get_impl() {
 			value = mapFunc(*source.get());
@@ -215,6 +215,26 @@ namespace streams {
 				++counter;
 			}
 			return counter;
+		}
+
+		template<typename Predicate>
+		bool any(Predicate&& predicate) {
+			while (extractor.advance()) {
+				if (predicate(*extractor.get())) {
+					return true;
+				}
+			}
+			return false;
+		}
+
+		template<typename Predicate>
+		bool all(Predicate&& predicate) {
+			while (extractor.advance()) {
+				if (!predicate(*extractor.get())) {
+					return false;
+				}
+			}
+			return true;
 		}
 
 	};
