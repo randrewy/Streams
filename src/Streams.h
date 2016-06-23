@@ -194,10 +194,10 @@ namespace streams {
 			return BaseStreamInterface<Extractor>(Extractor(extractor, count));
 		}
 
-		template<typename PeekFunc>
-		auto peek(PeekFunc&& peekFunc) {
-			using Extractor = PeekStreamExtractor<decltype(extractor), PeekFunc>;
-			return BaseStreamInterface<Extractor>(Extractor(extractor, std::forward<PeekFunc>(peekFunc)));
+		template<typename Inspector>
+		auto inspect(Inspector&& inspector) {
+			using Extractor = PeekStreamExtractor<decltype(extractor), Inspector>;
+			return BaseStreamInterface<Extractor>(Extractor(extractor, std::forward<Inspector>(inspector)));
 		}
 
 		// Terminal Operations  
