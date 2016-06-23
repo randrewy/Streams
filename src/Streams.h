@@ -237,6 +237,14 @@ namespace streams {
 			return true;
 		}
 
+		template<typename Accumulator, typename Fold>
+		Accumulator fold(Accumulator a, Fold&& fold) {
+			while (extractor.advance()) {
+				a = fold(a, *extractor.get());
+			}
+			return a;
+		}
+
 	};
 
 	template<typename Container>
