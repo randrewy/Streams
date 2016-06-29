@@ -210,6 +210,22 @@ namespace streams {
 			return BaseStreamInterface<Extractor>(Extractor(extractor, std::forward<Inspector>(inspector)));
 		}
 
+
+		// Non-Terminal
+
+		Optional<value_type> next() {
+			if (extractor.advance()) {
+				return{ *extractor.get() };
+			}
+			return{};
+		}
+
+		Optional<value_type> nth(size_t n) {
+			while (n && extractor.advance()) {
+				--n;
+			}
+			return next();
+		}
 		// Terminal Operations  
 
 		template<typename Callable>
