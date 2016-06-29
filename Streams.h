@@ -12,6 +12,8 @@ namespace streams {
 	template<typename T>
 	using Optional = std::experimental::optional<T>;
 
+	using std::experimental::nullopt;
+
 	template <typename DerivedStreamExtractor>
 	struct StreamExtractor {
 		// TODO: noexcept?
@@ -174,8 +176,7 @@ namespace streams {
 	template<typename ExtractorType>
 	struct BaseStreamInterface {
 		ExtractorType extractor;
-		using iterator_type = decltype(extractor.get());
-		using value_type = typename std::remove_reference<typename std::remove_pointer<iterator_type>::type>::type;
+		using value_type = typename std::remove_reference<decltype(*extractor.get())>::type;
 
 		BaseStreamInterface(ExtractorType e) : extractor(e) {}
 
