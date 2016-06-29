@@ -1,7 +1,16 @@
 #ifndef RUST_STREAMS_H
 #define RUST_STREAMS_H
 
+#if defined _MSC_VER
+#include "Optional/optional.hpp"
+# else
+#include <experimental/optional>
+#endif
+
 namespace streams {
+
+	template<typename T>
+	using Optional = std::experimental::optional<T>;
 
 	template <typename DerivedStreamExtractor>
 	struct StreamExtractor {
