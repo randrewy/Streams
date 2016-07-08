@@ -74,9 +74,34 @@ namespace streams {
 
 	};
 
+	template<typename ExtractorType, typename Predicate>
+	struct SkipWhileStreamExtractor : StreamExtractor<SkipWhileStreamExtractor<ExtractorType, Predicate>> {
+		SkipWhileStreamExtractor(ExtractorType extractor, Predicate&& predicate) : source(extractor), predicate(std::forward<Predicate>(predicate)) {}
+
+		ExtractorType source;
+		Predicate predicate;
+		bool skipping = true;
+
+		auto get_impl() {
+			return source.get();
+		}
+
+		bool advance_impl() {
+			if (skipping) {
+				while (skipping && source.advance()) {
+					skipping = predicate(*source.get());
+				}
+				return !skipping; // depleted stream : skipping == true
+			} else {
+				return source.advance();
+			}
+		}
+
+	};
+
 	template<typename ExtractorType>
-	struct LimitStreamExtractor : StreamExtractor<LimitStreamExtractor<ExtractorType>> {
-		LimitStreamExtractor(ExtractorType extractor, size_t count) : source(extractor), limit(count) {}
+	struct TakeStreamExtractor : StreamExtractor<TakeStreamExtractor<ExtractorType>> {
+		TakeStreamExtractor(ExtractorType extractor, size_t count) : source(extractor), limit(count) {}
 
 		ExtractorType source;
 		size_t limit;
@@ -91,6 +116,25 @@ namespace streams {
 				return source.advance();
 			}
 			return false;
+		}
+
+	};
+
+	template<typename ExtractorType, typename Predicate>
+	struct TakeWhileStreamExtractor : StreamExtractor<TakeWhileStreamExtractor<ExtractorType, Predicate>> {
+		TakeWhileStreamExtractor(ExtractorType extractor, Predicate&& predicate) : source(extractor), predicate(std::forward<Predicate>(predicate)) {}
+
+		ExtractorType source;
+		Predicate predicate;
+		bool taking = true;
+
+		auto get_impl() {
+			return source.get();
+		}
+
+		bool advance_impl() {
+			taking &= taking && source.advance() && predicate(*source.get());
+			return taking;
 		}
 
 	};
@@ -151,16 +195,16 @@ namespace streams {
 	};
 
 
-	template<typename ExtractorType, typename PeekFunc>
-	struct PeekStreamExtractor : StreamExtractor<PeekStreamExtractor<ExtractorType, PeekFunc>> {
-		PeekStreamExtractor(ExtractorType sourceExtractor, PeekFunc&& p) : source(sourceExtractor), peekFunc(std::forward<PeekFunc>(p)) {}
+	template<typename ExtractorType, typename Inspector>
+	struct InspectStreamExtractor : StreamExtractor<InspectStreamExtractor<ExtractorType, Inspector>> {
+		InspectStreamExtractor(ExtractorType extractor, Inspector&& inspector) : source(extractor), inspector(std::forward<Inspector>(inspector)) {}
 
 		ExtractorType source;
-		PeekFunc peekFunc;
+		Inspector inspector;
 
 		auto get_impl() {
 			auto value = source.get();
-			peekFunc(*value);
+			inspector(*value);
 			return value;
 		}
 
@@ -194,19 +238,31 @@ namespace streams {
 			return BaseStreamInterface<Extractor>(Extractor(extractor, std::forward<Predicate>(predicate)));
 		}
 
-		auto skipFirst(size_t count) {
+		auto skip(size_t count) {
 			using Extractor = SkipFirstStreamExtractor<decltype(extractor)>;
 			return BaseStreamInterface<Extractor>(Extractor(extractor, count));
 		}
 
-		auto limit(size_t count) {
-			using Extractor = LimitStreamExtractor<decltype(extractor)>;
+		template<typename Predicate>
+		auto skipWhile(Predicate&& predicate) {
+			using Extractor = SkipWhileStreamExtractor<decltype(extractor), Predicate>;
+			return BaseStreamInterface<Extractor>(Extractor(extractor, std::forward<Predicate>(predicate)));
+		}
+
+		auto take(size_t count) {
+			using Extractor = TakeStreamExtractor<decltype(extractor)>;
 			return BaseStreamInterface<Extractor>(Extractor(extractor, count));
+		}
+
+		template<typename Predicate>
+		auto takeWhile(Predicate&& predicate) {
+			using Extractor = TakeWhileStreamExtractor<decltype(extractor), Predicate>;
+			return BaseStreamInterface<Extractor>(Extractor(extractor, std::forward<Predicate>(predicate)));
 		}
 
 		template<typename Inspector>
 		auto inspect(Inspector&& inspector) {
-			using Extractor = PeekStreamExtractor<decltype(extractor), Inspector>;
+			using Extractor = InspectStreamExtractor<decltype(extractor), Inspector>;
 			return BaseStreamInterface<Extractor>(Extractor(extractor, std::forward<Inspector>(inspector)));
 		}
 
