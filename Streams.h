@@ -327,6 +327,15 @@ namespace streams {
 			return a;
 		}
 
+        template <template<class...> class Container = std::vector>
+        auto collect() {
+            Container<typename std::remove_const<value_type>::type> container;
+            while (extractor.advance()) {
+                container.push_back(*extractor.get());
+            }
+            return container;
+        }
+
 	};
 
 	template<typename Container>
