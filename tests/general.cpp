@@ -3,7 +3,7 @@
 #include<algorithm>
 #include<utility>
 #include<list>
-
+#include<iostream>
 #include "..\Streams.h"
 #include "gtest/gtest.h"
 
@@ -143,6 +143,101 @@ TEST_F(GeneralTests, SkipSome) {
 }
 
 
+TEST_F(GeneralTests, SkipWhileAll) {
+	auto vec = getStream()
+		.skipWhile([](auto&) {return true; })
+		.collect();
+
+	ASSERT_EQ(std::vector<int>{}, vec);
+}
+
+TEST_F(GeneralTests, SkipWhileNone) {
+	auto vec = getStream()
+		.skipWhile([](auto&) {return false; })
+		.collect();
+
+	ASSERT_EQ(vector, vec);
+}
+
+TEST_F(GeneralTests, SkipWhileSome) {
+	auto vec = getStream()
+		.skipWhile([](auto& e) {return e < 7; })
+		.collect();
+
+	std::vector<int> check;
+	auto it = vector.begin();
+	while (it != vector.end() && *it < 7) {
+		++it;
+	}
+	std::copy(it, vector.end(), std::back_inserter(check));
+
+	ASSERT_EQ(check, vec);
+}
+
+
+TEST_F(GeneralTests, TakeAll) {
+	auto vec = getStream()
+		.take(vector.size())
+		.collect();
+
+	ASSERT_EQ(vector, vec);
+}
+
+TEST_F(GeneralTests, TakeNone) {
+	auto vec = getStream()
+		.take(0)
+		.collect();
+
+	ASSERT_EQ(std::vector<int>{}, vec);
+}
+
+TEST_F(GeneralTests, TakeSome) {
+	size_t n = 5;
+
+	auto vec = getStream()
+		.take(n)
+		.collect();
+
+	std::vector<int> check;
+	for (size_t i = 0; i < n; i++) {
+		check.push_back(vector[i]);
+	}
+
+	ASSERT_EQ(check, vec);
+}
+
+
+TEST_F(GeneralTests, TakeWhileAll) {
+	auto vec = getStream()
+		.takeWhile([](auto&) {return true; })
+		.collect();
+
+	ASSERT_EQ(vector, vec);
+}
+
+TEST_F(GeneralTests, TakeWhileNone) {
+	auto vec = getStream()
+		.takeWhile([](auto&) {return false; })
+		.collect();
+
+	ASSERT_EQ(std::vector<int>{}, vec);
+}
+
+TEST_F(GeneralTests, TakeWhileSome) {
+	auto vec = getStream()
+		.takeWhile([](auto& e) {return e < 10; })
+		.collect();
+
+	std::vector<int> check;
+	for (size_t i = 0; i < vector.size(); i++) {
+		if (vector[i] >= 10) {
+			break;
+		}
+		check.push_back(vector[i]);
+	}
+
+	ASSERT_EQ(check, vec);
+}
 
 int main(int argc, char **argv) {
 	::testing::InitGoogleTest(&argc, argv);
