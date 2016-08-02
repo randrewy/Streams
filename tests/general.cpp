@@ -239,7 +239,86 @@ TEST_F(GeneralTests, TakeWhileSome) {
 	ASSERT_EQ(check, vec);
 }
 
+
+TEST_F(GeneralTests, Next) {
+	auto stream = getStream();
+
+	for (size_t i = 0; i < vector.size(); ++i) {
+		auto e = stream.next();
+		ASSERT_EQ(true, static_cast<bool>(e));
+		ASSERT_EQ(i, *e);
+	}
+	auto e = stream.next();
+	ASSERT_EQ(false, static_cast<bool>(e));
+	ASSERT_EQ(streams::nullopt, e);
+}
+
+
+TEST_F(GeneralTests, NthConsumes) {
+	auto stream = getStream();
+	auto e = stream.nth(0);
+	ASSERT_EQ(true, static_cast<bool>(e));
+	ASSERT_EQ(vector[0], *e);
+
+	auto e2 = stream.nth(0);
+	ASSERT_EQ(true, static_cast<bool>(e2));
+	ASSERT_EQ(vector[1], *e2);
+}
+
+TEST_F(GeneralTests, NthState) {
+	auto stream = getStream();
+	auto e = stream.nth(12);
+	ASSERT_EQ(true, static_cast<bool>(e));
+	ASSERT_EQ(vector[12], *e);
+
+	auto e2 = stream.nth(20);
+	ASSERT_EQ(true, static_cast<bool>(e2));
+	ASSERT_EQ(vector[33], *e2); // 33! coz 32-th is comsumed
+}
+
+TEST_F(GeneralTests, NthNotPresent) {
+	auto e2 = getStream().nth(100000);
+	ASSERT_EQ(false, static_cast<bool>(e2));
+	ASSERT_EQ(streams::nullopt, e2);
+}
+
+
+TEST_F(GeneralTests, Count) {
+	ASSERT_EQ(vector.size(), getStream().count());
+
+	std::vector<int> v;
+	ASSERT_EQ(0, streams::from(v).count());
+}
+
+
+TEST_F(GeneralTests, AnyResult) {
+	ASSERT_EQ(true, getStream().any([](auto& e) { return e > 50; }));
+	ASSERT_EQ(false, getStream().any([](auto& e) { return e < 0; }));
+}
+
+TEST_F(GeneralTests, AnyState) {
+	auto s = getStream();
+	ASSERT_EQ(true, s.any([](auto& e) { return e > 50; }));
+	ASSERT_EQ(false, s.any([](auto& e) { return e < 50; }));
+	ASSERT_EQ(false, s.any([](auto&) { return true; })); // Yes! false coz stream is depleted
+}
+
+
+TEST_F(GeneralTests, AllResult) {
+	ASSERT_EQ(true, getStream().all([](auto& e) { return e >= 0; }));
+	ASSERT_EQ(false, getStream().all([](auto& e) { return e < 99; }));
+}
+
+//TEST_F(GeneralTests, AllState) {
+//	auto s = getStream();
+//	auto check = [](auto& e) { return e >= 0; };
+//	ASSERT_EQ(true, s.all(check));
+//	ASSERT_EQ(false, s.all(check)); 
+//}
+
+
 int main(int argc, char **argv) {
+
 	::testing::InitGoogleTest(&argc, argv);
 	return RUN_ALL_TESTS();
 }
