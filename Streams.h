@@ -203,6 +203,28 @@ namespace streams {
 		Inspector inspector;
 
 		auto get_impl() {
+			return source.get();
+		}
+
+		bool advance_impl() {
+			if (source.advance()) {
+				inspector(*source.get());
+				return true;
+			}
+			return false;
+		}
+
+	};
+
+
+	template<typename ExtractorType, typename Inspector>
+	struct SpyStreamExtractor : StreamExtractor<SpyStreamExtractor<ExtractorType, Inspector>> {
+		SpyStreamExtractor(ExtractorType extractor, Inspector&& inspector) : source(extractor), inspector(std::forward<Inspector>(inspector)) {}
+
+		ExtractorType source;
+		Inspector inspector;
+
+		auto get_impl() {
 			auto value = source.get();
 			inspector(*value);
 			return value;
@@ -263,6 +285,12 @@ namespace streams {
 		template<typename Inspector>
 		auto inspect(Inspector&& inspector) {
 			using Extractor = InspectStreamExtractor<decltype(extractor), Inspector>;
+			return BaseStreamInterface<Extractor>(Extractor(extractor, std::forward<Inspector>(inspector)));
+		}
+
+		template<typename Inspector>
+		auto spy(Inspector&& inspector) {
+			using Extractor = SpyStreamExtractor<decltype(extractor), Inspector>;
 			return BaseStreamInterface<Extractor>(Extractor(extractor, std::forward<Inspector>(inspector)));
 		}
 

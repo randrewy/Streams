@@ -1,9 +1,10 @@
-#include<vector>
-#include<string>
-#include<algorithm>
-#include<utility>
-#include<list>
-#include<iostream>
+#include <vector>
+#include <string>
+#include <algorithm>
+#include <numeric>
+#include <utility>
+#include <list>
+#include <iostream>
 #include "..\Streams.h"
 #include "gtest/gtest.h"
 
@@ -309,12 +310,64 @@ TEST_F(GeneralTests, AllResult) {
 	ASSERT_EQ(false, getStream().all([](auto& e) { return e < 99; }));
 }
 
-//TEST_F(GeneralTests, AllState) {
-//	auto s = getStream();
-//	auto check = [](auto& e) { return e >= 0; };
-//	ASSERT_EQ(true, s.all(check));
-//	ASSERT_EQ(false, s.all(check)); 
-//}
+TEST_F(GeneralTests, AllState) {
+	auto s = getStream();
+	auto check = [](auto& e) { return e >= 0; };
+	ASSERT_EQ(true, s.all(check));
+	ASSERT_EQ(true, s.all(check));  // this should be well documented or changed
+}
+
+
+TEST_F(GeneralTests, Fold) {
+	int result = std::accumulate(vector.begin(), vector.end(), 0);
+	ASSERT_EQ(result, getStream().fold(0, std::plus<int>{}));
+}
+
+TEST_F(GeneralTests, FoldNone) {
+	std::vector<int> v{};
+	ASSERT_EQ(0, streams::from(v).fold(0, std::plus<int>{}));
+}
+
+
+TEST_F(GeneralTests, Inspect) {
+	std::vector<int> vec;
+	auto s = getStream().inspect([&vec](auto& v) {vec.push_back(v); }); // pretty stupid way to use inspect
+
+	ASSERT_EQ(std::vector<int>{}, vec); // laziness
+	s.collect();
+	ASSERT_EQ(vector, vec);
+}
+
+
+TEST_F(GeneralTests, InspectNth) {
+	std::vector<int> vec;
+	auto s = getStream()
+		.inspect([&vec](auto& v) {vec.push_back(v); })
+		.nth(10);
+
+	ASSERT_EQ(std::vector<int>(vector.begin(), vector.begin() + 11), vec);
+}
+
+
+TEST_F(GeneralTests, Spy) {
+	std::vector<int> vec;
+	auto s = getStream().spy([&vec](auto& v) {vec.push_back(v); });
+
+	ASSERT_EQ(std::vector<int>{}, vec); // laziness
+	s.collect();
+	ASSERT_EQ(vector, vec);
+}
+
+
+TEST_F(GeneralTests, SpyNth) {
+	std::vector<int> vec;
+	auto s = getStream()
+		.spy([&vec](auto& v) {vec.push_back(v); })
+		.nth(10);
+
+	std::vector<int> result = { (*vector.begin() + 10) };
+	ASSERT_EQ(result, vec);
+}
 
 
 int main(int argc, char **argv) {
