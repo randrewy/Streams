@@ -237,6 +237,40 @@ namespace streams {
 	};
 
 
+	template<typename T>
+	struct Enumerated {
+		size_t i;
+        typename std::decay<T>::type v;
+		Enumerated& operator = (const Enumerated&) = default;
+	};
+
+	template<typename T>
+    bool operator == (const Enumerated<T>& lhs, const Enumerated<T>& rhs) {
+		return lhs.i == rhs.i && lhs.v == rhs.v;
+	}
+
+	// TODO: here, object from source is copied. Try to avoid it 
+	template<typename ExtractorType>
+	struct EnumerateStreamExtractor : StreamExtractor<EnumerateStreamExtractor<ExtractorType>> {
+		EnumerateStreamExtractor(ExtractorType extractor, size_t counter = 0) : source(extractor), counter(counter){}
+
+		ExtractorType source;
+        size_t counter;
+        Enumerated<typename std::decay<decltype(*source.get())>::type> value {counter, {}};
+
+		auto get_impl() {
+            value = {counter - 1, *source.get()};
+            return &value;
+		}
+
+		bool advance_impl() {
+            ++counter;
+			return source.advance();
+		}
+
+	};
+
+
 	// TODO: extractors are copied every time...
 	// (n+1)th extractor will copy a chain of n extractors 
 	template<typename ExtractorType>
@@ -294,6 +328,11 @@ namespace streams {
 			return BaseStreamInterface<Extractor>(Extractor(extractor, std::forward<Inspector>(inspector)));
 		}
 
+		auto enumerate(size_t from = 0) {
+			using Extractor = EnumerateStreamExtractor<decltype(extractor)>;
+			return BaseStreamInterface<Extractor>(Extractor(extractor, from));
+		}
+
 
 		// Non-Terminal
 
@@ -310,7 +349,17 @@ namespace streams {
 			}
 			return next();
 		}
-		// Terminal Operations  
+		// Terminal Operations 
+
+		Optional<value_type> last() {
+			if (!extractor.advance()) {
+				return nullopt;
+			} else {
+				auto ptr = extractor.get();
+				while (extractor.advance()) {
+					ptr = extractor.get();
+				}				return *ptr;			}
+		}
 
 		template<typename Callable>
 		void forEach(Callable&& callable) {
@@ -355,9 +404,9 @@ namespace streams {
 			return a;
 		}
 
-        template <template<class...> class Container = std::vector>
+        template <template<class...> class Container = std::vector, typename Element = typename std::remove_const<value_type>::type>
         auto collect() {
-            Container<typename std::remove_const<value_type>::type> container;
+            Container<Element> container;
             while (extractor.advance()) {
                 container.push_back(*extractor.get());
             }

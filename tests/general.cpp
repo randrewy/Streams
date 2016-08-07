@@ -65,6 +65,14 @@ TEST_F(GeneralTests, CollectList) {
 	ASSERT_EQ(lst, vec);
 }
 
+TEST_F(GeneralTests, CollectAsOther) {
+	auto vec = getStream().collect<std::list, double>();
+
+	std::list<double> lst;
+	std::copy(vector.begin(), vector.end(), std::back_inserter(lst));
+	ASSERT_EQ(lst, vec);
+}
+
 
 TEST_F(GeneralTests, MapSameType) {
 	auto vec = getStream()
@@ -370,8 +378,42 @@ TEST_F(GeneralTests, SpyNth) {
 }
 
 
-int main(int argc, char **argv) {
+TEST_F(GeneralTests, LastSome) {
+	auto last = getStream().last();
+	ASSERT_EQ(true, static_cast<bool>(last));
+	ASSERT_EQ(*(vector.end()-1), *last);
+}
 
+TEST_F(GeneralTests, LastNone) {
+	std::vector<int> v{};
+	auto last = streams::from(v).last();
+	ASSERT_EQ(false, static_cast<bool>(last));
+}
+
+
+TEST_F(GeneralTests, Enumerate) {
+	auto s = getStream()
+		.enumerate()
+		.collect();
+
+	std::vector<streams::Enumerated<int>> check{};
+	size_t counter = 0;
+	std::transform(vector.begin(), vector.end(), std::back_inserter(check), [&counter](auto& v) {
+		return streams::Enumerated<int> {counter++, v};
+	});
+	ASSERT_EQ(check, s);
+}
+
+
+namespace streams {
+	template<typename T>
+	std::ostream& operator << (std::ostream& os, const Enumerated<T>& e) {
+		return os << "(" << e.i << ", " << e.v << ")";
+	}
+}
+
+
+int main(int argc, char **argv) {
 	::testing::InitGoogleTest(&argc, argv);
 	return RUN_ALL_TESTS();
 }
