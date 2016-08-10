@@ -240,7 +240,7 @@ namespace streams {
 	template<typename T>
 	struct Enumerated {
 		size_t i;
-        typename std::decay<T>::type v;
+        std::decay_t<T> v;
 		Enumerated& operator = (const Enumerated&) = default;
 	};
 
@@ -256,7 +256,7 @@ namespace streams {
 
 		ExtractorType source;
         size_t counter;
-        Enumerated<typename std::decay<decltype(*source.get())>::type> value {counter, {}};
+        Enumerated<std::decay_t<decltype(*source.get())>> value {counter, {}};
 
 		auto get_impl() {
             value = {counter - 1, *source.get()};
@@ -276,7 +276,7 @@ namespace streams {
 	template<typename ExtractorType>
 	struct BaseStreamInterface {
 		ExtractorType extractor;
-		using value_type = typename std::remove_reference<decltype(*extractor.get())>::type;
+		using value_type = std::remove_reference_t<decltype(*extractor.get())>;
 
 		BaseStreamInterface(ExtractorType e) : extractor(e) {}
 
@@ -404,7 +404,7 @@ namespace streams {
 			return a;
 		}
 
-        template <template<class...> class Container = std::vector, typename Element = typename std::remove_const<value_type>::type>
+        template <template<class...> class Container = std::vector, typename Element = std::remove_const_t<value_type>>
         auto collect() {
             Container<Element> container;
             while (extractor.advance()) {
