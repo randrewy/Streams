@@ -271,6 +271,32 @@ namespace streams {
 	};
 
 
+	template<typename ExtractorType, typename ExtractorOtherType>
+	struct ChainStreamExtractor : StreamExtractor<ChainStreamExtractor<ExtractorType, ExtractorOtherType>> {
+        ChainStreamExtractor(ExtractorType extractor, ExtractorOtherType other) : first(extractor), next(other){}
+
+		ExtractorType first;
+		ExtractorOtherType next;
+		bool firstHaveElements = true;
+
+		auto get_impl() {
+			if (firstHaveElements) {
+				return first.get();
+			} else {
+				return next.get();
+			}
+		}
+
+		bool advance_impl() {
+			if (firstHaveElements && (firstHaveElements = first.advance())) {
+				return true;
+			}
+			return next.advance();
+		}
+
+	};
+
+
 	// TODO: extractors are copied every time...
 	// (n+1)th extractor will copy a chain of n extractors 
 	template<typename ExtractorType>
@@ -331,6 +357,12 @@ namespace streams {
 		auto enumerate(size_t from = 0) {
 			using Extractor = EnumerateStreamExtractor<decltype(extractor)>;
 			return BaseStreamInterface<Extractor>(Extractor(extractor, from));
+		}
+
+        template <template<typename> class StreamOther, typename OtherExtractor>
+        auto chain(StreamOther<OtherExtractor> other) {
+            using Extractor = ChainStreamExtractor<decltype(extractor), OtherExtractor>;
+            return BaseStreamInterface<Extractor>(Extractor(extractor, other.extractor));
 		}
 
 

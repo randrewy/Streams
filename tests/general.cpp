@@ -405,6 +405,44 @@ TEST_F(GeneralTests, Enumerate) {
 }
 
 
+TEST_F(GeneralTests, ChainAll) {
+	auto s1 = getStream();
+	auto s2 = getStream().chain(s1);
+
+
+	std::vector<int> check{};
+	std::copy(vector.begin(), vector.end(), std::back_inserter(check));
+	std::copy(vector.begin(), vector.end(), std::back_inserter(check));
+
+	ASSERT_EQ(check, s2.collect());
+}
+
+TEST_F(GeneralTests, ChainWithEmpty) {
+	std::vector<int> emptyVec {};
+
+	auto s1 = getStream();
+	auto s2 = getStream();
+	auto empty = streams::from(emptyVec);
+
+	ASSERT_EQ(vector, s1.chain(empty).collect());
+	ASSERT_EQ(vector, empty.chain(s2).collect());
+}
+
+TEST_F(GeneralTests, ChainRepeated) {
+	auto s1 = getStream();
+	auto s2 = getStream();
+	auto s3 = getStream();
+
+	std::vector<int> check{};
+	std::copy(vector.begin(), vector.end(), std::back_inserter(check));
+	std::copy(vector.begin(), vector.end(), std::back_inserter(check));
+	std::copy(vector.begin(), vector.end(), std::back_inserter(check));
+
+	ASSERT_EQ(check, s1.chain(s2).chain(s3).collect());
+}
+
+
+
 namespace streams {
 	template<typename T>
 	std::ostream& operator << (std::ostream& os, const Enumerated<T>& e) {
