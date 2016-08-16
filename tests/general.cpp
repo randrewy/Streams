@@ -456,6 +456,37 @@ TEST_F(GeneralTests, ChainRepeated) {
 }
 
 
+TEST_F(GeneralTests, Zip) {
+	auto s1 = getStream();
+	auto s2 = getStream();
+
+	std::vector<streams::Tuple<int, int>> check;
+	for (size_t i = 0; i < vector.size(); ++i) {
+		check.push_back({ vector[i], vector[i] });
+	}
+
+	ASSERT_EQ(check, s1.zip(s2).collect());
+}
+
+TEST_F(GeneralTests, ZipWithShort) {
+	std::vector<int> vec{ 3, 4, 5 };
+
+	auto s1 = getStream();
+	auto s2 = getStream();
+	auto short1 = streams::from(vec);
+	auto short2 = streams::from(vec);
+
+	std::vector<streams::Tuple<int, int>> check1;
+	std::vector<streams::Tuple<int, int>> check2;
+	for (size_t i = 0; i < vec.size(); ++i) {
+		check1.push_back({ vector[i], vec[i] });
+		check2.push_back({ vec[i], vector[i] });
+	}
+
+	ASSERT_EQ(check1, s1.zip(short1).collect());
+	ASSERT_EQ(check2, short2.zip(s2).collect());
+}
+
 
 namespace streams {
 	template<typename T>

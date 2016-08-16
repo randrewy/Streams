@@ -176,22 +176,22 @@ namespace streams {
 	};
 
 
-	template<typename ExtractorType, typename MapFunc>
-	struct MapStreamExtractor : StreamExtractor<MapStreamExtractor<ExtractorType, MapFunc>> {
-		MapStreamExtractor(ExtractorType sourceExtractor, MapFunc&& m) : source(sourceExtractor), mapFunc(std::forward<MapFunc>(m)) {}
+	template<typename ExtractorType, typename Transform>
+	struct MapStreamExtractor : StreamExtractor<MapStreamExtractor<ExtractorType, Transform>> {
+		MapStreamExtractor(ExtractorType sourceExtractor, Transform&& transform) : source(sourceExtractor), transformer(std::forward<Transform>(transform)) {}
 
 		ExtractorType source;
-		MapFunc mapFunc;
+		Transform transformer;
 
 		//using InputType = decltype(std::declval<ExtractorType>().get());
 		//using OutputType = decltype(std::declval<Mapper>()(*std::declval<InputType>()))
 		//OutputType value;
 
 		// TODO: consider using shared_ptr here
-        decltype(mapFunc(*std::declval<decltype(source.get())>())) value {};
+        decltype(transformer(*std::declval<decltype(source.get())>())) value {};
 
 		auto get_impl() {
-			value = mapFunc(*source.get());
+			value = transformer(*source.get());
 			return &value;
 		}
 
@@ -325,6 +325,26 @@ namespace streams {
 	};
 
 
+	template<typename ExtractorType, typename ExtractorOtherType>
+	struct ZipStreamExtractor : StreamExtractor<ZipStreamExtractor<ExtractorType, ExtractorOtherType>> {
+		ZipStreamExtractor(ExtractorType extractor, ExtractorOtherType other) : left(extractor), right(other) {}
+
+		ExtractorType left;
+		ExtractorOtherType right;
+		Tuple<std::decay_t<decltype(*left.get())>, std::decay_t<decltype(*right.get())>> value {};
+
+		auto get_impl() {
+			value = { *left.get(), *right.get() };
+			return &value;
+		}
+
+		bool advance_impl() {
+			return left.advance() && right.advance();
+		}
+
+	};
+
+
 	// TODO: extractors are copied every time...
 	// (n+1)th extractor will copy a chain of n extractors 
 	template<typename ExtractorType>
@@ -396,6 +416,12 @@ namespace streams {
         auto chain(StreamOther<OtherExtractor> other) {
             using Extractor = ChainStreamExtractor<decltype(extractor), OtherExtractor>;
             return BaseStreamInterface<Extractor>(Extractor(extractor, other.extractor));
+		}
+
+		template <template<typename> class StreamOther, typename OtherExtractor>
+		auto zip(StreamOther<OtherExtractor> other) {
+			using Extractor = ZipStreamExtractor<decltype(extractor), OtherExtractor>;
+			return BaseStreamInterface<Extractor>(Extractor(extractor, other.extractor));
 		}
 
 
