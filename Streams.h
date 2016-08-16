@@ -1,6 +1,8 @@
 #ifndef RUST_STREAMS_H
 #define RUST_STREAMS_H
 
+#include<tuple>
+
 #if defined _MSC_VER
 #include "Optional/optional.hpp"
 # else
@@ -13,6 +15,11 @@ namespace streams {
 	using Optional = std::experimental::optional<T>;
 
 	using std::experimental::nullopt;
+
+	template<typename... Args>
+	using Tuple = std::tuple<Args...>;
+
+
 
 	template <typename DerivedStreamExtractor>
 	struct StreamExtractor {
@@ -271,6 +278,27 @@ namespace streams {
 	};
 
 
+	template<typename ExtractorType>
+	struct EnumerateTupleStreamExtractor : StreamExtractor<EnumerateTupleStreamExtractor<ExtractorType>> {
+		EnumerateTupleStreamExtractor(ExtractorType extractor, size_t counter = 0) : source(extractor), counter(counter) {}
+
+		ExtractorType source;
+		size_t counter;
+		Tuple<size_t, std::decay_t<decltype(*source.get())>> value{ counter, {} };
+
+		auto get_impl() {
+			value = { counter - 1, *source.get() };
+			return &value;
+		}
+
+		bool advance_impl() {
+			++counter;
+			return source.advance();
+		}
+
+	};
+
+
 	template<typename ExtractorType, typename ExtractorOtherType>
 	struct ChainStreamExtractor : StreamExtractor<ChainStreamExtractor<ExtractorType, ExtractorOtherType>> {
         ChainStreamExtractor(ExtractorType extractor, ExtractorOtherType other) : first(extractor), next(other){}
@@ -359,6 +387,11 @@ namespace streams {
 			return BaseStreamInterface<Extractor>(Extractor(extractor, from));
 		}
 
+		auto enumerateTup(size_t from = 0) {
+			using Extractor = EnumerateTupleStreamExtractor<decltype(extractor)>;
+			return BaseStreamInterface<Extractor>(Extractor(extractor, from));
+		}
+
         template <template<typename> class StreamOther, typename OtherExtractor>
         auto chain(StreamOther<OtherExtractor> other) {
             using Extractor = ChainStreamExtractor<decltype(extractor), OtherExtractor>;
@@ -390,7 +423,9 @@ namespace streams {
 				auto ptr = extractor.get();
 				while (extractor.advance()) {
 					ptr = extractor.get();
-				}				return *ptr;			}
+				}				
+				return *ptr;			
+			}
 		}
 
 		template<typename Callable>

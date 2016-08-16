@@ -405,6 +405,20 @@ TEST_F(GeneralTests, Enumerate) {
 }
 
 
+TEST_F(GeneralTests, EnumerateTup) {
+	auto s = getStream()
+		.enumerateTup()
+		.collect();
+
+	std::vector<streams::Tuple<size_t, int>> check{};
+	size_t counter = 0;
+	std::transform(vector.begin(), vector.end(), std::back_inserter(check), [&counter](auto& v) {
+		return streams::Tuple<size_t, int> {counter++, v};
+	});
+	ASSERT_EQ(check, s);
+}
+
+
 TEST_F(GeneralTests, ChainAll) {
 	auto s1 = getStream();
 	auto s2 = getStream().chain(s1);
