@@ -201,6 +201,45 @@ namespace streams {
 
 	};
 
+	// This should be optimized utilizing r- and l- return value from transformer
+	// bad: InnerCollection is a copy
+	// bad: placement new?
+	// dont like the implementation at all...
+	template<typename ExtractorType, typename Transform>
+	struct FlatMapStreamExtractor : StreamExtractor<FlatMapStreamExtractor<ExtractorType, Transform>> {
+		FlatMapStreamExtractor(ExtractorType sourceExtractor, Transform&& transform) : source(sourceExtractor), transformer(std::forward<Transform>(transform)) {}
+
+		ExtractorType source;
+		Transform transformer;
+
+        using val = std::decay_t<decltype(source.get())>;
+        using InnerCollection = decltype(transformer(*std::declval<val>()));
+        InnerCollection innerCollection{};
+        SequenceStreamExtractor<decltype(std::begin(innerCollection))> sequence{ std::begin(innerCollection), std::end(innerCollection) };
+
+
+		auto get_impl() {
+			return sequence.get();
+		}
+
+		bool advance_impl() {
+            if (!sequence.advance()) {
+                if (source.advance()) {
+                    innerCollection = transformer(*source.get());
+					new(&sequence) SequenceStreamExtractor<decltype(std::begin(innerCollection))> { std::begin(innerCollection), std::end(innerCollection) };
+                    return advance_impl();
+                }
+                else {
+                    return false;
+                }
+            }
+            else {
+                return true;
+            }
+		}
+
+	};
+
 
 	template<typename ExtractorType, typename Inspector>
 	struct InspectStreamExtractor : StreamExtractor<InspectStreamExtractor<ExtractorType, Inspector>> {
@@ -356,10 +395,24 @@ namespace streams {
 
 		// Intermediate Operations
 
-		template<typename MapFunc>
-		auto map(MapFunc&& mapper) {
-			using Extractor = MapStreamExtractor<decltype(extractor), MapFunc>;
-			return BaseStreamInterface<Extractor>(Extractor(extractor, std::forward<MapFunc>(mapper)));
+		template<typename Transform>
+		auto map(Transform&& transform) {
+			using Extractor = MapStreamExtractor<decltype(extractor), Transform>;
+			return BaseStreamInterface<Extractor>(Extractor(extractor, std::forward<Transform>(transform)));
+		}
+
+		// expects that std::begin and std::end can be called on the result of transform
+		template<typename Transform>
+		auto flatMap(Transform&& transform) {
+			using Extractor = FlatMapStreamExtractor<decltype(extractor), Transform>;
+			return BaseStreamInterface<Extractor>(Extractor(extractor, std::forward<Transform>(transform)));
+		}
+
+		// add flatten level
+		auto flatten() {
+			const auto flat = [](auto&& e) { return e; };
+			using Extractor = FlatMapStreamExtractor<decltype(extractor), decltype(flat)>;
+			return BaseStreamInterface<Extractor>(Extractor(extractor, std::move(flat)));
 		}
 
 		template<typename Predicate>

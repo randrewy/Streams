@@ -488,6 +488,37 @@ TEST_F(GeneralTests, ZipWithShort) {
 }
 
 
+TEST_F(GeneralTests, FlatMap) {
+	std::vector<std::string> vec{ "Banana", "Grapefruit", "Strawberry" };
+	auto s = streams::from(vec);
+
+	std::vector<char> check = { 'B', 'a', 'n', 'a', 'n', 'a',
+								'G', 'r', 'a', 'p', 'e', 'f', 'r', 'u', 'i', 't',
+								'S', 't', 'r', 'a', 'w', 'b', 'e', 'r', 'r', 'y' };
+	auto res = s.flatMap([](auto&& e) { return e; }).collect();
+	ASSERT_EQ(check, res);
+}
+
+
+TEST_F(GeneralTests, FlatMapWithEmpty) {
+	std::vector<std::list<std::string>> vec{ {"abc", ""}, {"", "d"}, {}, {"", ""}, {"e"} };
+	auto s = streams::from(vec);
+
+	std::vector<char> check = { 'a', 'b', 'c', 'd', 'e',};
+	auto res = s.flatten().flatten().collect();
+	ASSERT_EQ(check, res);
+}
+
+
+TEST_F(GeneralTests, Flatten) {
+	std::vector<std::string> vec{ "Foo", "Bar" };
+	std::vector<char> check = { 'F', 'o', 'o', 'B', 'a', 'r' };
+	
+	auto res = streams::from(vec).flatten().collect();
+	ASSERT_EQ(check, res);
+}
+
+
 namespace streams {
 	template<typename T>
 	std::ostream& operator << (std::ostream& os, const Enumerated<T>& e) {
