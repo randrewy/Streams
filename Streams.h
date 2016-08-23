@@ -19,6 +19,11 @@ namespace streams {
 	template<typename... Args>
 	using Tuple = std::tuple<Args...>;
 
+	template<typename Type>
+	constexpr bool IsOptional() {
+		using T = typename Type::value_type;
+		return std::is_same<Type, Optional<T>>::value;
+	}
 
 
 	template <typename DerivedStreamExtractor>
@@ -171,6 +176,38 @@ namespace streams {
 				}
 			}
 			return true;
+		}
+
+	};
+
+
+	template<typename ExtractorType, typename Transform>
+	struct FilterMapStreamExtractor : StreamExtractor<FilterMapStreamExtractor<ExtractorType, Transform>> {
+		FilterMapStreamExtractor(ExtractorType extractor, Transform&& t) : source(extractor), transform(std::forward<Transform>(t)) {}
+
+		ExtractorType source;
+		Transform transform;
+
+		using src_value = std::decay_t<decltype(*source.get())>;
+		src_value storage{};
+		static_assert(IsOptional<decltype(std::declval<Transform>()(*source.get()))>(), "Transform functor should return Optional<T> type");
+
+		auto get_impl() {
+			// we can do return source.get() here
+			return &storage;
+		}
+
+		bool advance_impl() {
+			while (true) {
+				if (!source.advance()) {
+					return false;
+				}
+				auto e = transform(*source.get());
+				if (e) {
+					storage = *e;
+					return true;
+				}
+			}
 		}
 
 	};
@@ -419,6 +456,12 @@ namespace streams {
 		auto filter(Predicate&& predicate) {
 			using Extractor = FilterStreamExtractor<decltype(extractor), Predicate>;
 			return BaseStreamInterface<Extractor>(Extractor(extractor, std::forward<Predicate>(predicate)));
+		}
+
+		template<typename Transform>
+		auto filterMap(Transform&& transform) {
+			using Extractor = FilterMapStreamExtractor<decltype(extractor), Transform>;
+			return BaseStreamInterface<Extractor>(Extractor(extractor, std::forward<Transform>(transform)));
 		}
 
 		auto skip(size_t count) {

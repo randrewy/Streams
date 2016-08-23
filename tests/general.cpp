@@ -123,6 +123,15 @@ TEST_F(GeneralTests, FilterNone) {
 }
 
 
+TEST_F(GeneralTests, FilterMap) {
+	auto vec = getStream()
+		.filterMap([](auto&& e) { return e % 25 == 0 ? streams::Optional<int>(e) : streams::nullopt; })
+		.collect();
+
+	ASSERT_EQ(std::vector<int>{}, vec);
+}
+
+
 TEST_F(GeneralTests, SkipAll) {
 	auto vec = getStream()
 		.skip(100)
@@ -528,6 +537,7 @@ namespace streams {
 
 
 int main(int argc, char **argv) {
+	streams::IsOptional<streams::Optional<int>>();
 	::testing::InitGoogleTest(&argc, argv);
 	return RUN_ALL_TESTS();
 }
