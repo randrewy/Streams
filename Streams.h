@@ -585,6 +585,23 @@ namespace streams {
 			return true;
 		}
 
+        template<typename Comparator = std::less<std::remove_const_t<value_type>>>
+        Optional<std::remove_const_t<value_type>> min(Comparator cmp = {}) {
+            Optional<std::remove_const_t<value_type>> value {};
+            while (extractor.advance()) {
+                auto v = extractor.get();
+                if (!value || cmp(*v, *value)) { // nullopt is the least
+                    value = *v;
+                }
+            }
+            return value;
+        }
+
+		template<typename Comparator = std::greater<std::remove_const_t<value_type>>>
+		Optional<std::remove_const_t<value_type>> max(Comparator cmp = {}) {
+			return min(cmp);
+		}
+
 		template<typename Accumulator, typename Fold>
 		Accumulator fold(Accumulator a, Fold&& fold) {
 			while (extractor.advance()) {

@@ -128,7 +128,14 @@ TEST_F(GeneralTests, FilterMap) {
 		.filterMap([](auto&& e) { return e % 25 == 0 ? streams::Optional<int>(e) : streams::nullopt; })
 		.collect();
 
-	ASSERT_EQ(std::vector<int>{}, vec);
+	std::vector<int> check;
+	for (size_t i = 0; i < vector.size(); ++i) {
+		if (vector[i] % 25 == 0) {
+			check.push_back(vector[i]);
+		}
+	}
+
+	ASSERT_EQ(check, vec);
 }
 
 
@@ -528,6 +535,37 @@ TEST_F(GeneralTests, Flatten) {
 }
 
 
+TEST_F(GeneralTests, Min) {
+	auto m = getStream().min();
+
+	ASSERT_EQ(true, static_cast<bool>(m));
+	ASSERT_EQ(*std::min_element(vector.begin(), vector.end()), *m);
+}
+
+TEST_F(GeneralTests, MinNone) {
+	std::vector<int> v{};
+	auto m = streams::from(v).min();
+
+	ASSERT_EQ(false, static_cast<bool>(m));
+}
+
+TEST_F(GeneralTests, MinCustom) {
+	std::vector<std::string> v {"Hurricane", "Oblivion", "Conquistador", "Stay"};
+	auto m = streams::from(v).min([](auto&& lhs, auto&& rhs) { return lhs.size() < rhs.size(); });
+
+	ASSERT_EQ(true, static_cast<bool>(m));
+	ASSERT_EQ("Stay", *m);
+}
+
+
+TEST_F(GeneralTests, Max) {
+	auto m = getStream().max();
+
+	ASSERT_EQ(true, static_cast<bool>(m));
+	ASSERT_EQ(*std::max_element(vector.begin(), vector.end()), *m);
+}
+
+
 namespace streams {
 	template<typename T>
 	std::ostream& operator << (std::ostream& os, const Enumerated<T>& e) {
@@ -537,7 +575,6 @@ namespace streams {
 
 
 int main(int argc, char **argv) {
-	streams::IsOptional<streams::Optional<int>>();
 	::testing::InitGoogleTest(&argc, argv);
 	return RUN_ALL_TESTS();
 }
