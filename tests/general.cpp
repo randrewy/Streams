@@ -504,6 +504,21 @@ TEST_F(GeneralTests, ZipWithShort) {
 }
 
 
+TEST_F(GeneralTests, Purify) {
+	using streams::nullopt;
+	std::vector<streams::Optional<int>> vec1{ 1, nullopt, 3, nullopt, 5, 6, 7, nullopt, nullopt };
+	std::vector<streams::Optional<int>> vec2{ nullopt, 1, nullopt, 2, nullopt, 3 };
+
+	auto v1 = streams::from(vec1).purify().collect();
+	auto v2 = streams::from(vec2).purify().collect();
+
+	std::vector<int> check1{ 1, 3, 5, 6, 7 };
+	std::vector<int> check2{ 1, 2, 3};
+	ASSERT_EQ(check1, v1);
+	ASSERT_EQ(check2, v2);
+}
+
+
 TEST_F(GeneralTests, FlatMap) {
 	std::vector<std::string> vec{ "Banana", "Grapefruit", "Strawberry" };
 	auto s = streams::from(vec);

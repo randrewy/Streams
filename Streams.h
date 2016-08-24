@@ -22,7 +22,7 @@ namespace streams {
 	template<typename Type>
 	constexpr bool IsOptional() {
 		using T = typename Type::value_type;
-		return std::is_same<Type, Optional<T>>::value;
+		return std::is_same<std::remove_const_t<Type>, Optional<T>>::value;
 	}
 
 
@@ -421,6 +421,33 @@ namespace streams {
 	};
 
 
+	template<typename ExtractorType>
+	struct PurifyStreamExtractor : StreamExtractor<PurifyStreamExtractor<ExtractorType>> {
+		PurifyStreamExtractor(ExtractorType extractor) : source(extractor) {}
+
+		ExtractorType source;
+		using source_value = std::decay_t<decltype(*source.get())>;
+		static_assert(IsOptional<source_value>(), "Expected Optional<T> as a source");
+		using value_type = std::remove_const_t<typename source_value::value_type>;
+		value_type value;
+
+		auto get_impl() {
+			value = **source.get();
+			return &value;
+		}
+
+		bool advance_impl() {
+			while (source.advance()) {
+				if (*source.get() != nullopt) {
+					return true;
+				}
+			}
+			return false;
+		}
+
+	};
+
+
 	// TODO: extractors are copied every time...
 	// (n+1)th extractor will copy a chain of n extractors 
 	template<typename ExtractorType>
@@ -520,6 +547,11 @@ namespace streams {
 			return BaseStreamInterface<Extractor>(Extractor(extractor, other.extractor));
 		}
 
+		auto purify() {
+			static_assert(IsOptional<value_type>(), "Purify should be called on a stream of Optional<T> values");
+			using Extractor = PurifyStreamExtractor<decltype(extractor)>;
+			return BaseStreamInterface<Extractor>(Extractor(extractor));
+		}
 
 		// Non-Terminal
 
