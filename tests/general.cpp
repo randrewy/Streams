@@ -573,13 +573,25 @@ TEST_F(GeneralTests, FindSome) {
 	ASSERT_EQ(99, *m);
 }
 
-
 TEST_F(GeneralTests, FindNone) {
 	auto m = getStream().find([](auto&&) {return false; });
 
 	ASSERT_EQ(false, static_cast<bool>(m));
 }
 
+
+TEST_F(GeneralTests, PositionSome) {
+	auto m = getStream().position([](auto&& e) {return e*e == 99 * 99; });
+
+	ASSERT_EQ(true, static_cast<bool>(m));
+	ASSERT_EQ(100, *m);
+}
+
+TEST_F(GeneralTests, PositionNone) {
+	auto m = getStream().position([](auto&& e) {return e < 0; });
+
+	ASSERT_EQ(false, static_cast<bool>(m));
+}
 
 namespace streams {
 	template<typename T>

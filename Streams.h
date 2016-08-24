@@ -613,6 +613,18 @@ namespace streams {
 			return nullopt;
 		}
 
+		template<typename Predicate>
+		Optional<size_t> position(Predicate&& predicate) {
+			size_t counter = 0;
+			while (extractor.advance()) {
+				++counter;
+				if (predicate(*extractor.get())) {
+					return counter;
+				}
+			}
+			return nullopt;
+		}
+
 		template<typename Accumulator, typename Fold>
 		Accumulator fold(Accumulator a, Fold&& fold) {
 			while (extractor.advance()) {
