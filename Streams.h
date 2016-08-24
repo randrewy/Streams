@@ -602,6 +602,17 @@ namespace streams {
 			return min(cmp);
 		}
 
+		template<typename Predicate>
+		Optional<std::remove_const_t<value_type>> find(Predicate&& predicate) {
+			while (extractor.advance()) {
+				auto e = extractor.get();
+				if (predicate(*e)) {
+					return *e;
+				}
+			}
+			return nullopt;
+		}
+
 		template<typename Accumulator, typename Fold>
 		Accumulator fold(Accumulator a, Fold&& fold) {
 			while (extractor.advance()) {

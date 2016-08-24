@@ -566,6 +566,21 @@ TEST_F(GeneralTests, Max) {
 }
 
 
+TEST_F(GeneralTests, FindSome) {
+	auto m = getStream().find([](auto&& e) {return e*e == 99 * 99; });
+
+	ASSERT_EQ(true, static_cast<bool>(m));
+	ASSERT_EQ(99, *m);
+}
+
+
+TEST_F(GeneralTests, FindNone) {
+	auto m = getStream().find([](auto&&) {return false; });
+
+	ASSERT_EQ(false, static_cast<bool>(m));
+}
+
+
 namespace streams {
 	template<typename T>
 	std::ostream& operator << (std::ostream& os, const Enumerated<T>& e) {
