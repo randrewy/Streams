@@ -129,9 +129,9 @@ TEST_F(GeneralTests, FilterMap) {
 		.collect();
 
 	std::vector<int> check;
-	for (size_t i = 0; i < vector.size(); ++i) {
-		if (vector[i] % 25 == 0) {
-			check.push_back(vector[i]);
+	for (int i : vector) {
+		if (i % 25 == 0) {
+			check.push_back(i);
 		}
 	}
 
@@ -254,11 +254,11 @@ TEST_F(GeneralTests, TakeWhileSome) {
 		.collect();
 
 	std::vector<int> check;
-	for (size_t i = 0; i < vector.size(); i++) {
-		if (vector[i] >= 10) {
+	for (int i : vector) {
+		if (i >= 10) {
 			break;
 		}
-		check.push_back(vector[i]);
+		check.push_back(i);
 	}
 
 	ASSERT_EQ(check, vec);
@@ -268,7 +268,7 @@ TEST_F(GeneralTests, TakeWhileSome) {
 TEST_F(GeneralTests, Next) {
 	auto stream = getStream();
 
-	for (size_t i = 0; i < vector.size(); ++i) {
+	for (int i : vector) {
 		auto e = stream.next();
 		ASSERT_EQ(true, static_cast<bool>(e));
 		ASSERT_EQ(i, *e);
@@ -477,8 +477,8 @@ TEST_F(GeneralTests, Zip) {
 	auto s2 = getStream();
 
 	std::vector<streams::Tuple<int, int>> check;
-	for (size_t i = 0; i < vector.size(); ++i) {
-		check.push_back({ vector[i], vector[i] });
+	for (int i : vector) {
+		check.push_back({ i, i });
 	}
 
 	ASSERT_EQ(check, s1.zip(s2).collect());
@@ -607,6 +607,27 @@ TEST_F(GeneralTests, PositionNone) {
 
 	ASSERT_EQ(false, static_cast<bool>(m));
 }
+
+
+TEST_F(GeneralTests, Partition) {
+	auto decider = [](auto&& e) {return e % 2; };
+	auto pair = getStream().partition(decider);
+
+	std::vector<int> check1;
+	std::vector<int> check2;
+	for (int i : vector) {
+		if (decider(i)) {
+			check1.push_back(i);
+		} else {
+			check2.push_back(i);
+		}
+	}
+
+	ASSERT_EQ(check1, pair.first);
+	ASSERT_EQ(check2, pair.second);
+}
+
+
 
 namespace streams {
 	template<typename T>

@@ -674,6 +674,20 @@ namespace streams {
             return container;
         }
 
+		template <typename Predicate, template<class...> class Container = std::vector, typename Element = std::remove_const_t<value_type>>
+		auto partition(Predicate&& predicate) {
+			std::pair<Container<Element>, Container<Element>> pair;
+			while (extractor.advance()) {
+				auto e = extractor.get();
+				if (predicate(*e)) {
+					pair.first.push_back(*e);
+				} else {
+					pair.second.push_back(*e);
+				}
+			}
+			return pair;
+		}
+
 	};
 
 	template<typename Container>
