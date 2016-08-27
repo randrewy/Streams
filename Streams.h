@@ -5,8 +5,10 @@
 
 #if defined _MSC_VER
 #include "Optional/optional.hpp"
+#define CONSTEXPR
 # else
 #include <experimental/optional>
+#define CONSTEXPR constexpr
 #endif
 
 namespace streams {
@@ -28,13 +30,12 @@ namespace streams {
 
 	template <typename DerivedStreamExtractor>
 	struct StreamExtractor {
-		// TODO: noexcept?
-		auto get() {
+
+        auto get() noexcept(noexcept(std::declval<DerivedStreamExtractor>().get_impl())) {
 			return static_cast<DerivedStreamExtractor*>(this)->get_impl();
 		}
 
-		// TODO: noexcept?
-		bool advance() {
+        bool advance() noexcept(noexcept(std::declval<DerivedStreamExtractor>().advance_impl())) {
 			return static_cast<DerivedStreamExtractor*>(this)->advance_impl();
 		}
 	};
@@ -48,7 +49,7 @@ namespace streams {
 		const IteratorType begin;
 		const IteratorType end;
 
-		auto get_impl() {
+		auto get_impl() noexcept {
 			return current;
 		}
 
@@ -62,7 +63,6 @@ namespace streams {
 		}
 	};
 
-	// TODO: templated size_t counter + static_assertion?
 	template<typename ExtractorType>
 	struct SkipFirstStreamExtractor : StreamExtractor<SkipFirstStreamExtractor<ExtractorType>> {
 		SkipFirstStreamExtractor(ExtractorType extractor, size_t count) : source(extractor), skipCount(count) {}
@@ -698,6 +698,33 @@ namespace streams {
 
 	template<typename Container>
 	auto from(const Container&& container) = delete; // currently disastrous
+
+	namespace generate {
+
+		inline namespace generators {
+			struct CounterGenerator : StreamExtractor<CounterGenerator> {
+				constexpr CounterGenerator(size_t from = 0) : current(from - 1) {}
+
+				size_t current;
+
+				auto get_impl() noexcept {
+					return &current;
+				}
+
+				bool advance_impl() noexcept {
+					current++;
+					return true;
+				}
+			};
+
+		} // namespace generators
+
+		auto counter(size_t from = 0) {
+            return BaseStreamInterface<CounterGenerator>(CounterGenerator(from));
+		}
+
+	} // namespace generate
+
 
 } // namespace streams
 

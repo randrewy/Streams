@@ -628,6 +628,23 @@ TEST_F(GeneralTests, Partition) {
 }
 
 
+TEST_F(GeneralTests, GeneratorCounter) {
+	auto c = streams::generate::counter(123)
+		.take(1000)
+		.count();
+
+	ASSERT_EQ(1000, c);
+
+	auto v = streams::generate::counter(77)
+		.take(4)
+		.collect();
+
+	std::vector<size_t> check{77, 78, 79, 80};
+
+	ASSERT_EQ(check, v);
+}
+
+
 
 namespace streams {
 	template<typename T>
