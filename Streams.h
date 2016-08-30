@@ -24,7 +24,7 @@ namespace streams {
     template<typename Type>
     constexpr bool IsOptional() {
         using T = typename Type::value_type;
-        return std::is_same<std::remove_const_t<Type>, Optional<T>>::value;
+        return std::is_same<std::decay_t<Type>, Optional<T>>::value;
     }
 
 
