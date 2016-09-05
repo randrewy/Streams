@@ -692,8 +692,8 @@ namespace streams {
 
     template<typename Container>
     auto from(const Container& container) {
-        using Extractor = SequenceStreamExtractor<decltype(std::cbegin(container))>;
-        return BaseStreamInterface<Extractor>(Extractor(std::cbegin(container), std::cend(container)));
+        using Extractor = SequenceStreamExtractor<decltype(std::begin(container))>;
+        return BaseStreamInterface<Extractor>(Extractor(std::begin(container), std::end(container)));
     }
 
     template<typename Container>
