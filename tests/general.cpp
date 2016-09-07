@@ -642,6 +642,14 @@ TEST_F(GeneralTests, GeneratorCounter) {
     std::vector<size_t> check{77, 78, 79, 80};
 
     ASSERT_EQ(check, v);
+
+    auto v2 = streams::generate::counter()
+        .take(5)
+        .collect();
+
+    std::vector<size_t> check2{ 0, 1, 2, 3, 4 };
+
+    ASSERT_EQ(check2, v2);
 }
 
 
