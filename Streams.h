@@ -42,7 +42,9 @@ namespace streams {
 
     template <typename IteratorType>
     struct SequenceStreamExtractor : StreamExtractor<SequenceStreamExtractor<IteratorType>> {
-        SequenceStreamExtractor(IteratorType b, IteratorType e) : current(b), next(b), begin(b), end(e) {}
+        SequenceStreamExtractor(IteratorType&& b, IteratorType&& e) 
+            : current(std::forward<IteratorType>(b)), next(std::forward<IteratorType>(b))
+            , begin(std::forward<IteratorType>(b)), end(std::forward<IteratorType>(e)) {}
 
         IteratorType current;
         IteratorType next;
@@ -423,7 +425,7 @@ namespace streams {
 
     template<typename ExtractorType>
     struct PurifyStreamExtractor : StreamExtractor<PurifyStreamExtractor<ExtractorType>> {
-        PurifyStreamExtractor(ExtractorType extractor) : source(extractor) {}
+        PurifyStreamExtractor(ExtractorType extractor) : source(extractor), value() {}
 
         ExtractorType source;
         using source_value = std::decay_t<decltype(*source.get())>;
@@ -699,31 +701,30 @@ namespace streams {
     template<typename Container>
     auto from(const Container&& container) = delete; // currently disastrous
 
-    namespace generate {
+    inline namespace generators {
+        struct CounterGenerator : StreamExtractor<CounterGenerator> {
+            constexpr CounterGenerator(size_t from = 0) : current(from - 1) {}
 
-        inline namespace generators {
-            struct CounterGenerator : StreamExtractor<CounterGenerator> {
-                constexpr CounterGenerator(size_t from = 0) : current(from - 1) {}
+            size_t current;
 
-                size_t current;
+            auto get_impl() noexcept {
+                return &current;
+            }
 
-                auto get_impl() noexcept {
-                    return &current;
-                }
+            bool advance_impl() noexcept {
+                current++;
+                return true;
+            }
+        };
 
-                bool advance_impl() noexcept {
-                    current++;
-                    return true;
-                }
-            };
+    } // namespace generators
 
-        } // namespace generators
-
-        auto counter(size_t from = 0) {
+    struct generate {
+        static auto counter(size_t from = 0) {
             return BaseStreamInterface<CounterGenerator>(CounterGenerator(from));
         }
 
-    } // namespace generate
+    }; // struct generate
 
 
 } // namespace streams

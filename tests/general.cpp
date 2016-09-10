@@ -5,18 +5,18 @@
 #include <utility>
 #include <list>
 #include <iostream>
-#include "..\Streams.h"
+#include "Streams.h"
 #include "gtest/gtest.h"
 
 class GeneralTests : public ::testing::Test {
-    const int size = 100;
+    const size_t size = 100;
 
 protected:
-    std::vector<int> vector;
+    std::vector<int> vector = {};
     void SetUp() {
         vector.reserve(size);
-        for (int i = 0; i < size; ++i) {
-            vector.push_back(i);
+        for (size_t i = 0; i < size; ++i) {
+            vector.push_back(static_cast<int>(i));
         }
     }
 
@@ -370,6 +370,8 @@ TEST_F(GeneralTests, InspectNth) {
         .nth(10);
 
     ASSERT_EQ(std::vector<int>(vector.begin(), vector.begin() + 11), vec);
+    ASSERT_EQ(true, static_cast<bool>(s));
+    ASSERT_EQ(10, *s);
 }
 
 
@@ -391,6 +393,8 @@ TEST_F(GeneralTests, SpyNth) {
 
     std::vector<int> result = { (*vector.begin() + 10) };
     ASSERT_EQ(result, vec);
+    ASSERT_EQ(true, static_cast<bool>(s));
+    ASSERT_EQ(10, *s);
 }
 
 
