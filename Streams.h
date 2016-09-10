@@ -457,7 +457,7 @@ namespace streams {
         ExtractorType extractor;
         using value_type = std::remove_reference_t<decltype(*extractor.get())>;
 
-        BaseStreamInterface(ExtractorType e) : extractor(e) {}
+        CONSTEXPR BaseStreamInterface(ExtractorType e) : extractor(e) {}
 
         // Intermediate Operations
 
@@ -720,7 +720,7 @@ namespace streams {
     } // namespace generators
 
     struct generate {
-        static auto counter(size_t from = 0) {
+        static CONSTEXPR auto counter(size_t from = 0) {
             return BaseStreamInterface<CounterGenerator>(CounterGenerator(from));
         }
 
