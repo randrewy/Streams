@@ -21,10 +21,18 @@ namespace streams {
     template<typename... Args>
     using Tuple = std::tuple<Args...>;
 
-    template<typename Type>
-    constexpr bool IsOptional() {
-        using T = typename Type::value_type;
-        return std::is_same<std::decay_t<Type>, Optional<T>>::value;
+    namespace traits {
+        template<typename Type>
+        constexpr bool IsOptional() {
+            using T = typename Type::value_type;
+            return std::is_same<std::decay_t<Type>, Optional<T>>::value;
+        }
+
+        template<typename Extractor>
+        using ValueType = std::decay_t<decltype(*(std::declval<Extractor>().get()))>;
+
+        template<typename Extractor, typename Functor>
+        using ApplyOnValueType = decltype(std::declval<Functor>()(std::declval<decltype(*(std::declval<Extractor>().get()))>()));
     }
 
 
@@ -169,10 +177,10 @@ namespace streams {
             if (!source.advance()) {
                 return false;
             }
-            auto element = source.get();
-            while (!predicate(*element)) {
+            auto elementPtr = source.get();
+            while (!predicate(*elementPtr)) {
                 if (source.advance()) {
-                    element = source.get();
+                    elementPtr = source.get();
                 } else {
                     return false;
                 }
@@ -190,12 +198,11 @@ namespace streams {
         ExtractorType source;
         Transform transform;
 
-        using src_value = std::decay_t<decltype(*source.get())>;
-        src_value storage{};
-        static_assert(IsOptional<decltype(std::declval<Transform>()(*source.get()))>(), "Transform functor should return Optional<T> type");
+        traits::ValueType<ExtractorType> storage {};
+
+        static_assert(traits::IsOptional<decltype(std::declval<Transform>()(*source.get()))>(), "Transform functor should return Optional<T> type");
 
         auto get_impl() {
-            // we can do return source.get() here
             return &storage;
         }
 
@@ -222,12 +229,7 @@ namespace streams {
         ExtractorType source;
         Transform transformer;
 
-        //using InputType = decltype(std::declval<ExtractorType>().get());
-        //using OutputType = decltype(std::declval<Mapper>()(*std::declval<InputType>()))
-        //OutputType value;
-
-        // TODO: consider using shared_ptr here
-        decltype(transformer(*std::declval<decltype(source.get())>())) value {};
+        traits::ApplyOnValueType<ExtractorType, Transform> value;
 
         auto get_impl() {
             value = transformer(*source.get());
@@ -240,10 +242,7 @@ namespace streams {
 
     };
 
-    // This should be optimized utilizing r- and l- return value from transformer
-    // bad: InnerCollection is a copy
-    // bad: placement new?
-    // dont like the implementation at all...
+
     template<typename ExtractorType, typename Transform>
     struct FlatMapStreamExtractor : StreamExtractor<FlatMapStreamExtractor<ExtractorType, Transform>> {
         FlatMapStreamExtractor(ExtractorType sourceExtractor, Transform&& transform) : source(sourceExtractor), transformer(std::forward<Transform>(transform)) {}
@@ -251,9 +250,7 @@ namespace streams {
         ExtractorType source;
         Transform transformer;
 
-        using val = std::decay_t<decltype(source.get())>;
-        using InnerCollection = decltype(transformer(*std::declval<val>()));
-        InnerCollection innerCollection{};
+        traits::ApplyOnValueType<ExtractorType, Transform> innerCollection{};
         SequenceStreamExtractor<decltype(std::begin(innerCollection))> sequence{ std::begin(innerCollection), std::end(innerCollection) };
 
 
@@ -264,7 +261,7 @@ namespace streams {
         bool advance_impl() {
             if (!sequence.advance()) {
                 if (source.advance()) {
-                    innerCollection = transformer(*source.get());
+                    innerCollection = transformer(*source.get()); // what if SequenceStreamExtractor::IteratorType needs to free some resource?
                     new(&sequence) SequenceStreamExtractor<decltype(std::begin(innerCollection))> { std::begin(innerCollection), std::end(innerCollection) };
                     return advance_impl();
                 }
@@ -334,14 +331,14 @@ namespace streams {
         return lhs.i == rhs.i && lhs.v == rhs.v;
     }
 
-    // TODO: here, object from source is copied. Try to avoid it 
+
     template<typename ExtractorType>
     struct EnumerateStreamExtractor : StreamExtractor<EnumerateStreamExtractor<ExtractorType>> {
         EnumerateStreamExtractor(ExtractorType extractor, size_t counter = 0) : source(extractor), counter(counter){}
 
         ExtractorType source;
         size_t counter;
-        Enumerated<std::decay_t<decltype(*source.get())>> value {counter, {}};
+        Enumerated<traits::ValueType<ExtractorType>> value {counter, {}};
 
         auto get_impl() {
             value = {counter - 1, *source.get()};
@@ -362,7 +359,7 @@ namespace streams {
 
         ExtractorType source;
         size_t counter;
-        Tuple<size_t, std::decay_t<decltype(*source.get())>> value{ counter, {} };
+        Tuple<size_t, traits::ValueType<ExtractorType>> value {counter, {}};
 
         auto get_impl() {
             value = { counter - 1, *source.get() };
@@ -409,7 +406,7 @@ namespace streams {
 
         ExtractorType left;
         ExtractorOtherType right;
-        Tuple<std::decay_t<decltype(*left.get())>, std::decay_t<decltype(*right.get())>> value {};
+        Tuple<traits::ValueType<ExtractorType>, traits::ValueType<ExtractorOtherType>> value {};
 
         auto get_impl() {
             value = { *left.get(), *right.get() };
@@ -428,9 +425,9 @@ namespace streams {
         PurifyStreamExtractor(ExtractorType extractor) : source(extractor), value() {}
 
         ExtractorType source;
-        using source_value = std::decay_t<decltype(*source.get())>;
-        static_assert(IsOptional<source_value>(), "Expected Optional<T> as a source");
-        using value_type = std::remove_const_t<typename source_value::value_type>;
+        using source_optional_type = traits::ValueType<ExtractorType>;
+        static_assert(traits::IsOptional<source_optional_type>(), "Expected Optional<T> as a source");
+        using value_type = std::remove_const_t<typename source_optional_type::value_type>;
         value_type value;
 
         auto get_impl() {
@@ -449,9 +446,6 @@ namespace streams {
 
     };
 
-
-    // TODO: extractors are copied every time...
-    // (n+1)th extractor will copy a chain of n extractors 
     template<typename ExtractorType>
     struct BaseStreamInterface {
         ExtractorType extractor;
@@ -550,7 +544,7 @@ namespace streams {
         }
 
         auto purify() {
-            static_assert(IsOptional<value_type>(), "Purify should be called on a stream of Optional<T> values");
+            static_assert(traits::IsOptional<value_type>(), "Purify should be called on a stream of Optional<T> values");
             using Extractor = PurifyStreamExtractor<decltype(extractor)>;
             return BaseStreamInterface<Extractor>(Extractor(extractor));
         }

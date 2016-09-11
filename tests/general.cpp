@@ -5,7 +5,7 @@
 #include <utility>
 #include <list>
 #include <iostream>
-#include "Streams.h"
+#include "../Streams.h"
 #include "gtest/gtest.h"
 
 class GeneralTests : public ::testing::Test {
