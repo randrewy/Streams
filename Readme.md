@@ -52,16 +52,16 @@ If you are curious the result is:
 
 ## Under the hood ##
 Streams are designed to be fast and lightweight proxy objects. Streams:
-- doesn't own the underlying collection; 
-- doesn't modify the underlying collection; 
-- doesn't allocate memory on the heap;
-- never throws exceptions unless it's thrown from inside user code;
+- don't own the underlying collection; 
+- don't modify the underlying collection; 
+- don't allocate memory on the heap;
+- never throw exceptions unless it's thrown from inside user code;
 - are valid to copy, though the state will also be copied.
 
-As a proxy object, stream should never outlive its source. 
+As a proxy object, stream should never outlive it's source. 
 
 Stream is a single-use object. It can't be reset or used again after its source is depleted.
-Actually, using a depleted stream is a valid operation, but the stream is always empty, once it had
+Actually, using a depleted stream is a valid operation, but the stream is always empty, once it has
 no element to extract.
 
 ### Tests ###
