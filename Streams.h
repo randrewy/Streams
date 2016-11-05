@@ -229,7 +229,7 @@ namespace streams {
         ExtractorType source;
         Transform transformer;
 
-        traits::ApplyOnValueType<ExtractorType, Transform> value;
+        traits::ApplyOnValueType<ExtractorType, Transform> value {};
 
         auto get_impl() {
             value = transformer(*source.get());
