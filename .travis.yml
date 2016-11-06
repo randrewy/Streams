@@ -29,7 +29,7 @@ install:
 matrix:
   # ==[Coveralls]==
 
-  include:TOKEN
+  include:
   - os: linux
     compiler: gcc
     addons:
