@@ -1,3 +1,6 @@
+[![Build Status](https://travis-ci.org/randrewy/Streams.svg?branch=master)](https://travis-ci.org/randrewy/Streams)
+[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/randrewy/Streams/master/License.md)
+[![Coverage Status](https://coveralls.io/repos/github/randrewy/Streams/badge.svg?branch=master)](https://coveralls.io/github/randrewy/Streams?branch=master)
 # Streams++ #
 
 Streams++ is a WIP C++14 library inspired by Rust-lang Iterator trait and Java 8 Streams API.
@@ -16,6 +19,7 @@ need extra steps after pulling this repository:
 git submodule init
 git submodule update
 ```
+You can use cmake to build tests and examples alltogeather.
 
 ## Examples ##
 #### Creating a stream from a collection ####
@@ -51,19 +55,27 @@ If you are curious the result is:
 ```
 
 ## Under the hood ##
-Streams are designed to be fast and lightweight proxy objects. Streams:
+Streams are designed to be fast and lightweight proxy objects. Every stream is a different 
+class with statically dispatched methods. More than that, a stream
 - doesn't own the underlying collection; 
 - doesn't modify the underlying collection; 
 - doesn't allocate memory on the heap;
 - never throws exceptions unless it's thrown from inside user code;
-- are valid to copy, though the state will also be copied.
+- is valid to copy, though the state will also be copied.
 
 As a proxy object, stream should never outlive its source. 
 
 Stream is a single-use object. It can't be reset or used again after its source is depleted.
-Actually, using a depleted stream is a valid operation, but the stream is always empty, once it had
-no element to extract.
+Actually, using an exhausted stream is a valid operation, but the stream will remain empty forever.
 
 ### Tests ###
 You'll need [googletest](https://github.com/google/googletest/blob/master/googletest/).
-Compile and run tests/general.cpp.
+Simply run
+```
+$ mkdir build
+$ cd build
+$ cmake ..
+$ make
+$ ctest -VV
+```
+or use generated project file on Windows.
