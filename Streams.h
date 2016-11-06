@@ -18,9 +18,6 @@ namespace streams {
 
     using std::experimental::nullopt;
 
-    template<typename... Args>
-    using Tuple = std::tuple<Args...>;
-
     namespace traits {
         template<typename Type>
         constexpr bool IsOptional() {
@@ -359,10 +356,10 @@ namespace streams {
 
         ExtractorType source;
         size_t counter;
-        Tuple<size_t, traits::ValueType<ExtractorType>> value {counter, {}};
+        std::tuple<size_t, traits::ValueType<ExtractorType>> value {counter, {}};
 
         auto get_impl() {
-            value = { counter - 1, *source.get() };
+            value = std::make_tuple(counter - 1, *source.get());
             return &value;
         }
 
@@ -406,10 +403,10 @@ namespace streams {
 
         ExtractorType left;
         ExtractorOtherType right;
-        Tuple<traits::ValueType<ExtractorType>, traits::ValueType<ExtractorOtherType>> value {};
+        std::tuple<traits::ValueType<ExtractorType>, traits::ValueType<ExtractorOtherType>> value {};
 
         auto get_impl() {
-            value = { *left.get(), *right.get() };
+            value = std::make_tuple(*left.get(), *right.get());
             return &value;
         }
 

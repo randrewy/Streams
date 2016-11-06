@@ -430,10 +430,10 @@ TEST_F(GeneralTests, EnumerateTup) {
         .enumerateTup()
         .collect();
 
-    std::vector<streams::Tuple<size_t, int>> check{};
+    std::vector<std::tuple<size_t, int>> check{};
     size_t counter = 0;
     std::transform(vector.begin(), vector.end(), std::back_inserter(check), [&counter](auto& v) {
-        return streams::Tuple<size_t, int> {counter++, v};
+        return std::tuple<size_t, int> {counter++, v};
     });
     ASSERT_EQ(check, s);
 }
@@ -480,9 +480,9 @@ TEST_F(GeneralTests, Zip) {
     auto s1 = getStream();
     auto s2 = getStream();
 
-    std::vector<streams::Tuple<int, int>> check;
+    std::vector<std::tuple<int, int>> check;
     for (int i : vector) {
-        check.push_back({ i, i });
+        check.push_back(std::make_tuple(i, i));
     }
 
     ASSERT_EQ(check, s1.zip(s2).collect());
@@ -496,11 +496,11 @@ TEST_F(GeneralTests, ZipWithShort) {
     auto short1 = streams::from(vec);
     auto short2 = streams::from(vec);
 
-    std::vector<streams::Tuple<int, int>> check1;
-    std::vector<streams::Tuple<int, int>> check2;
+    std::vector<std::tuple<int, int>> check1;
+    std::vector<std::tuple<int, int>> check2;
     for (size_t i = 0; i < vec.size(); ++i) {
-        check1.push_back({ vector[i], vec[i] });
-        check2.push_back({ vec[i], vector[i] });
+        check1.push_back(std::make_tuple(vector[i], vec[i]));
+        check2.push_back(std::make_tuple(vec[i], vector[i]));
     }
 
     ASSERT_EQ(check1, s1.zip(short1).collect());
