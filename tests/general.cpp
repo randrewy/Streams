@@ -155,6 +155,15 @@ TEST_F(GeneralTests, SkipNone) {
     ASSERT_EQ(vector, vec);
 }
 
+TEST_F(GeneralTests, SkipOnEmpty) {
+    std::vector<int> v {};
+    auto vec = streams::from(v)
+        .skip(12)
+        .collect();
+
+    ASSERT_EQ(v, vec);
+}
+
 TEST_F(GeneralTests, SkipSome) {
     auto vec = getStream()
         .skip(3)
