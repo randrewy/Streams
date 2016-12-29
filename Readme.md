@@ -32,7 +32,7 @@ auto stream = streams::from(vec);
 int sum = streams::from(vec) // you can use a 'stream' created before
     .filter([](auto& e) {return e % 17 == 0; })
     .map([](auto& e) { return e*e; })
-    .fold(0, std::plus<int>{});
+    .fold(0, std::plus<>{});
 ```
 #### First 5 roman numbers with more than 10 'digits' ####
 ```c++
