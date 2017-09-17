@@ -3,7 +3,7 @@
 [![Coverage Status](https://coveralls.io/repos/github/randrewy/Streams/badge.svg?branch=master)](https://coveralls.io/github/randrewy/Streams?branch=master)
 # Streams++ #
 
-Streams++ is a WIP C++14 library inspired by Rust-lang Iterator trait and Java 8 Streams API.
+Streams++ is a C++14 library inspired by Rust-lang Iterator trait and Java 8 Streams API.
 A stream represents a sequence of elements that come from some source. The stream itselt 
 and most operations upon its elements are lazy, so nothing is evaluated until it has to be done. 
 This allows to perform computation in a functional style by chaining operations stream supports.
@@ -45,6 +45,8 @@ streams::generate::counter(1)
     .take(5)
     .forEach([](auto& e) { std::cout << e.i + 1 << " == " << e.v << std::endl; });
 ```
+`enumerate()` will stream struct with `i`ndex and `v`alue members. In case you want to use idiomatic std::tuple call `enumerateTup()` here.
+
 If you are curious the result is:
 ```
 388 == CCCLXXXVIII

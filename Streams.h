@@ -248,7 +248,9 @@ namespace streams {
         Transform transformer;
 
         traits::ApplyOnValueType<ExtractorType, Transform> innerCollection{};
-        SequenceStreamExtractor<decltype(std::begin(innerCollection))> sequence{ std::begin(innerCollection), std::end(innerCollection) };
+
+        using SequenceStreamExtractorType = SequenceStreamExtractor<decltype(std::begin(innerCollection))>;
+        SequenceStreamExtractorType sequence{ std::begin(innerCollection), std::end(innerCollection) };
 
 
         auto get_impl() {
@@ -258,7 +260,8 @@ namespace streams {
         bool advance_impl() {
             if (!sequence.advance()) {
                 if (source.advance()) {
-                    innerCollection = transformer(*source.get()); // what if SequenceStreamExtractor::IteratorType needs to free some resource?
+                    innerCollection = transformer(*source.get());
+                    sequence.~SequenceStreamExtractorType();
                     new(&sequence) SequenceStreamExtractor<decltype(std::begin(innerCollection))> { std::begin(innerCollection), std::end(innerCollection) };
                     return advance_impl();
                 }
